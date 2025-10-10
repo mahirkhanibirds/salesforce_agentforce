@@ -1,0 +1,6 @@
+<apex:page renderAs="PDF" >
+    <body>
+        
+   <apex:image url="https://images.weserv.nl/?url=www.arlight.net/media/ffdjf3jz/e-0360-opc.png&output=png" width="540px"/>
+        </body>
+</apex:page>
