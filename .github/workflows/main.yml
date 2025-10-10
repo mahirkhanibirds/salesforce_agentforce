@@ -8,20 +8,30 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Checkout your code from GitHub
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Step 2: Install Salesforce CLI
       - name: Install Salesforce CLI
         run: |
           npm install @salesforce/cli --global
           sf --version
 
+      # Step 3: Authenticate to Salesforce using JWT
       - name: Authenticate to Salesforce
         run: |
-          echo "${{ secrets.JWT_KEY }}" > server.key
-          sf org login jwt --username ${{ secrets.mahir.k508@agentforce.com }} --jwt-key-file server.key --client-id ${{ secrets.3MVG9rZjd7MXFdLjLpPvtxzmpOgxN4wAGWmxh3q0dN8W5mW5xEgSlyChhOGORU0AX8Jn2xBsGll1cAsedU4LX }} --instance-url ${{ secrets.https://orgfarm-b2ba007d6f-dev-ed.develop.my.salesforce.com/ }} --alias targetOrg
+          echo "${{ secrets.SF_JWT_KEY }}" > server.key
+          sf org login jwt \
+            --username ${{ secrets.SF_USERNAME }} \
+            --jwt-key-file server.key \
+            --client-id ${{ secrets.SF_CLIENT_ID }} \
+            --instance-url ${{ secrets.SF_INSTANCE_URL }} \
+            --alias targetOrg
 
+      # Step 4: Deploy metadata to the target org
       - name: Deploy metadata to target org
         run: |
           sf project deploy start --source-dir force-app --target-org targetOrg --ignore-conflicts
