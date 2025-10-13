@@ -26,11 +26,12 @@ jobs:
           echo "${{ secrets.SFDX_AUTH_URL }}" > auth_url.txt
           sf org login sfdx-url -f auth_url.txt -a MySandbox
 
-      # Step 4: Identify Changed Files (in force-app)
+      # Step 4: Identify Changed Files (Compare with main branch)
       - name: Get changed source files
         id: changes
         run: |
-          CHANGED=$(git diff --name-only HEAD~1 HEAD -- force-app/ | grep -E '\.cls$|\.js$|\.html$|\.xml$|\.js-meta\.xml$|\.trigger$|\.cmp$|\.page$' || true)
+          git fetch origin main
+          CHANGED=$(git diff --name-only origin/main -- force-app/ | grep -E '\.cls$|\.trigger$|\.js$|\.html$|\.cmp$|\.xml$' || true)
           if [ -z "$CHANGED" ]; then
             echo "No changes to deploy."
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -41,12 +42,12 @@ jobs:
             echo "files=$CHANGED" >> $GITHUB_OUTPUT
           fi
 
-      # Step 5: Deploy only if there are changed files
+      # Step 5: Deploy only changed files
       - name: Deploy only changed components
         if: steps.changes.outputs.changed == 'true'
         run: |
           echo "Deploying changed files..."
-          sf project deploy start -p $(echo "${{ steps.changes.outputs.files }}" | tr '\n' ',') -o MySandbox --ignore-conflicts
+          sf project deploy start -p $(echo "${{ steps.changes.outputs.files }}" | tr '\n' ',') -o MySandbox --ignore-conflicts --wait 10
 
       # Step 6: Skip message if nothing changed
       - name: No deployment needed
