@@ -1,4 +1,4 @@
-name: Deploy to Salesforce
+name: Deploy Only Last Salesforce Change
 
 on:
   push:
@@ -10,47 +10,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository
+      # Step 1: Checkout the latest code
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2 # So we can compare with the previous commit
+          fetch-depth: 2   # Needed to compare last 2 commits (HEAD & HEAD~1)
 
       # Step 2: Install Salesforce CLI
       - name: Install Salesforce CLI
         run: npm install @salesforce/cli --global
 
-      # Step 3: Authenticate to Salesforce Org
+      # Step 3: Authenticate to Salesforce
       - name: Authenticate to Salesforce
         run: |
           echo "${{ secrets.SFDX_AUTH_URL }}" > auth_url.txt
           sf org login sfdx-url -f auth_url.txt -a MySandbox
 
-      # Step 4: Detect changes in the last commit only
-      - name: Get last commit changed files
+      # Step 4: Detect only last commit Salesforce changes
+      - name: Detect Salesforce metadata changes
         id: changes
         run: |
-          echo "Checking last commit changes..."
+          echo "🔍 Checking last commit changes..."
           CHANGED=$(git diff --name-only HEAD~1 HEAD -- force-app/ | grep -E '\.cls$|\.trigger$|\.xml$|\.js$|\.html$|\.cmp$|\.page$' || true)
 
           if [ -z "$CHANGED" ]; then
-            echo "No changes detected in the last commit."
+            echo "No Salesforce changes found in last commit."
             echo "changed=false" >> $GITHUB_OUTPUT
           else
-            echo "Files changed in last commit:"
+            echo "Salesforce files changed in last commit:"
             echo "$CHANGED"
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "files=$CHANGED" >> $GITHUB_OUTPUT
           fi
 
-      # Step 5: Deploy only if there are changed files
-      - name: Deploy only changed files
+      # Step 5: Deploy only the changed Salesforce components
+      - name: Deploy changed Salesforce files
         if: steps.changes.outputs.changed == 'true'
         run: |
-          echo "Deploying changed files to Salesforce..."
+          echo "🚀 Deploying changed Salesforce files..."
           sf project deploy start -p $(echo "${{ steps.changes.outputs.files }}" | tr '\n' ',') -o MySandbox --ignore-conflicts --wait 10
 
-      # Step 6: No deployment needed
+      # Step 6: Skip if no changes
       - name: No deployment required
         if: steps.changes.outputs.changed == 'false'
-        run: echo "✅ No new changes to deploy in the last commit."
+        run: echo "✅ No Salesforce files changed in the last commit. Skipping deployment."
