@@ -48,7 +48,8 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         run: |
           echo "🚀 Deploying changed Salesforce files..."
-          sf project deploy start -p $(echo "${{ steps.changes.outputs.files }}" | tr '\n' ',') -o MySandbox --ignore-conflicts --wait 10
+          echo "Files to deploy: $FILES"
+          sf project deploy start --source-dir $FILES -o MySandbox --ignore-conflicts --wait 10
 
       # Step 6: Skip if no changes
       - name: No deployment required
