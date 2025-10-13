@@ -1,4 +1,4 @@
-name: Deploy to Salesforce
+name: Deploy Only Changed Files to Salesforce
 
 on:
   push:
@@ -8,17 +8,47 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Checkout source code
       - name: Checkout repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Important! so we can compare commits properly
 
+      # Step 2: Install Salesforce CLI
       - name: Install Salesforce CLI
         run: npm install @salesforce/cli --global
 
+      # Step 3: Authenticate to Salesforce
       - name: Authenticate to Salesforce
         run: |
-          echo ${{ secrets.SFDX_AUTH_URL }} > auth_url.txt
+          echo "${{ secrets.SFDX_AUTH_URL }}" > auth_url.txt
           sf org login sfdx-url -f auth_url.txt -a MySandbox
 
-      - name: Deploy to Org
-        run: sf project deploy start -d force-app -o MySandbox
+      # Step 4: Identify Changed Files (in force-app)
+      - name: Get changed source files
+        id: changes
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- force-app/ | grep -E '\.cls$|\.js$|\.html$|\.xml$|\.js-meta\.xml$|\.trigger$|\.cmp$|\.page$' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "No changes to deploy."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changed files:"
+            echo "$CHANGED"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "files=$CHANGED" >> $GITHUB_OUTPUT
+          fi
+
+      # Step 5: Deploy only if there are changed files
+      - name: Deploy only changed components
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          echo "Deploying changed files..."
+          sf project deploy start -p $(echo "${{ steps.changes.outputs.files }}" | tr '\n' ',') -o MySandbox --ignore-conflicts
+
+      # Step 6: Skip message if nothing changed
+      - name: No deployment needed
+        if: steps.changes.outputs.changed == 'false'
+        run: echo "✅ No changes found to deploy!"
