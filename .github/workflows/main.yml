@@ -10,49 +10,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout latest code (compare with previous commit)
-      - name: Checkout repo
+      # Step 1: Checkout full repo history
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2   # Need last 2 commits to detect changes
+          fetch-depth: 0  # Full history for git diff to work properly
 
       # Step 2: Install Salesforce CLI
       - name: Install Salesforce CLI
         run: npm install @salesforce/cli --global
 
-      # Step 3: Authenticate to Salesforce org
+      # Step 3: Authenticate to Salesforce Org
       - name: Authenticate to Salesforce
         run: |
           echo "${{ secrets.SFDX_AUTH_URL }}" > auth_url.txt
           sf org login sfdx-url -f auth_url.txt -a MySandbox
 
-      # Step 4: Detect only Salesforce changes (Apex, LWC, Triggers, etc.)
+      # Step 4: Detect changed Salesforce files in last commit
       - name: Detect Salesforce metadata changes
         id: changes
         run: |
-          echo "🔍 Detecting last commit Salesforce changes..."
-          CHANGED=$(git diff --name-only HEAD~1 HEAD -- force-app/ | grep -E '\.(cls|trigger|xml|js|html|cmp|page|app|css)$' || true)
+          echo "🔍 Detecting changed Salesforce files..."
+          CHANGED=$(git diff --name-only HEAD^ HEAD -- force-app/ | grep -E '\.(cls|trigger|xml|js|html|cmp|page|app|css)$' || true)
           
           if [ -z "$CHANGED" ]; then
-            echo "No Salesforce changes found."
+            echo "No Salesforce changes detected."
             echo "changed=false" >> $GITHUB_OUTPUT
           else
-            echo "Changed Salesforce files:"
+            echo "Salesforce files changed:"
             echo "$CHANGED"
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "files=$CHANGED" >> $GITHUB_OUTPUT
           fi
 
-      # Step 5: Deploy only changed Salesforce files
+      # Step 5: Deploy changed files only
       - name: Deploy changed Salesforce files
         if: steps.changes.outputs.changed == 'true'
         run: |
           echo "🚀 Deploying changed Salesforce files..."
-          FILES=$(echo "${{ steps.changes.outputs.files }}" | tr '\n' ',' | sed 's/,$//')
+          FILES=$(echo "${{ steps.changes.outputs.files }}" | tr '\n' ' ')
           echo "Files to deploy: $FILES"
           sf project deploy start --source-dir $FILES -o MySandbox --ignore-conflicts --wait 10
 
-      # Step 6: Skip deployment if no change
+      # Step 6: Skip deployment if no changes
       - name: No deployment required
         if: steps.changes.outputs.changed == 'false'
         run: echo "✅ No Salesforce files changed in the last commit. Skipping deployment."
