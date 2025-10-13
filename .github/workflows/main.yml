@@ -1,37 +1,24 @@
-name: Deploy to Salesforce Sandbox
+name: Deploy to Salesforce
 
 on:
   push:
     branches:
-      - main   # Jab main branch me push hoga tab deploy chalega
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Checkout your code from GitHub
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      # Step 2: Install Salesforce CLI
       - name: Install Salesforce CLI
-        run: |
-          npm install @salesforce/cli --global
-          sf --version
+        run: npm install @salesforce/cli --global
 
-      # Step 3: Authenticate to Salesforce using JWT
       - name: Authenticate to Salesforce
         run: |
-          echo "${{ secrets.SF_JWT_KEY }}" > server.key
-          sf org login jwt \
-            --username ${{ secrets.SF_USERNAME }} \
-            --jwt-key-file server.key \
-            --client-id ${{ secrets.SF_CLIENT_ID }} \
-            --instance-url ${{ secrets.SF_INSTANCE_URL }} \
-            --alias targetOrg
+          echo ${{ secrets.SFDX_AUTH_URL }} > auth_url.txt
+          sf org login sfdx-url -f auth_url.txt -a MySandbox
 
-      # Step 4: Deploy metadata to the target org
-      - name: Deploy metadata to target org
-        run: |
-          sf project deploy start --source-dir force-app --target-org targetOrg --ignore-conflicts
+      - name: Deploy to Org
+        run: sf project deploy start -d force-app -o MySandbox
