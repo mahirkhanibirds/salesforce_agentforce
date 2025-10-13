@@ -29,7 +29,7 @@ jobs:
       - name: Detect Salesforce metadata changes
         id: changes
         run: |
-          echo "🔍 Detecting changed Salesforce files..."
+          echo CHANGED=$(git diff --name-only HEAD^ HEAD -- force-app/ | grep -E '\.(cls|trigger|xml|js|html|cmp|page|app|css)$' || true)
           
           # Get list of changed files in last commit
           CHANGED=$(git diff --name-only HEAD^ HEAD -- force-app/ | grep -E '\.(cls|trigger|xml|js|html|cmp|page|app|css)$' || true)
