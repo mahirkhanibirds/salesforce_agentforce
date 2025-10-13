@@ -1,5 +1,5 @@
 public class tempCheck {
     public static void testTempMethod(){
-        System.debug(' Mahir Khan 1234567 ');   
+        System.debug(' Mahir Khan 12345678 ');   
     }
 }
