@@ -21,5 +21,30 @@ jobs:
           echo "${{ secrets.SFDX_AUTH_URL }}" > auth_url.txt
           sf org login sfdx-url -f auth_url.txt -a MySandbox
 
-      - name: Deploy to Org
-        run: sf project deploy start -d force-app -o MySandbox
+           # Step 4: Detect changed Salesforce metadata files
+          - name: Get changed source files
+            id: changes
+            run: |
+              git fetch origin main
+              CHANGED=$(git diff --name-only origin/main -- force-app/ | grep -E '\.cls$|\.trigger$|\.js$|\.html$|\.cmp$|\.xml$|\.js-meta\.xml$|\.page$' || true)
+              if [ -z "$CHANGED" ]; then
+                echo "No changes found."
+                echo "changed=false" >> $GITHUB_OUTPUT
+              else
+                echo "Changed files detected:"
+                echo "$CHANGED"
+                echo "changed=true" >> $GITHUB_OUTPUT
+                echo "files=$CHANGED" >> $GITHUB_OUTPUT
+              fi
+    
+          # Step 5: Deploy only changed files
+          - name: Deploy only changed components
+            if: steps.changes.outputs.changed == 'true'
+            run: |
+              echo "Deploying changed files..."
+              sf project deploy start -p $(echo "${{ steps.changes.outputs.files }}" | tr '\n' ',') -o MySandbox --ignore-conflicts --wait 10
+    
+          # Step 6: Skip if no changes
+          - name: No deployment needed
+            if: steps.changes.outputs.changed == 'false'
+            run: echo "✅ No new or updated files to deploy!"
