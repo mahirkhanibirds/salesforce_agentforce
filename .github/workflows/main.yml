@@ -47,7 +47,6 @@ jobs:
       - name: Deploy changed Salesforce files
         if: steps.changes.outputs.changed == 'true'
         run: |
-          echo "🚀 Deploying changed Salesforce files..."
           echo "Files to deploy: $FILES"
           sf project deploy start --source-dir $FILES -o MySandbox --ignore-conflicts --wait 10
 
