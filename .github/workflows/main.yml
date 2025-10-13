@@ -26,25 +26,11 @@ jobs:
           echo "${{ secrets.SFDX_AUTH_URL }}" > auth_url.txt
           sf org login sfdx-url -f auth_url.txt -a MySandbox
 
-      # Step 4: Detect only Salesforce changes (Apex, LWC, Triggers, etc.)
-      - name: Detect Salesforce metadata changes
-        id: changes
+      - name: List all changed files
         run: |
-          echo "🔍 Detecting Salesforce changes..."
-          git fetch origin main --depth=2
-          
-          # Compare the last commit on main
-          CHANGED=$(git diff --name-only origin/main~1 origin/main -- force-app/ | grep -E '\.(cls|trigger|xml|js|html|cmp|page|app|css)$' || true)
-          
-          if [ -z "$CHANGED" ]; then
-            echo "No Salesforce changes found."
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "Changed Salesforce files:"
-            echo "$CHANGED"
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "files=$CHANGED" >> $GITHUB_OUTPUT
-          fi
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "$file was changed"
+          done
           
       # Step 5: Deploy only changed Salesforce files
       - name: Deploy changed Salesforce files
