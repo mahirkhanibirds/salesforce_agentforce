@@ -26,7 +26,26 @@ jobs:
           echo "${{ secrets.SFDX_AUTH_URL }}" > auth_url.txt
           sf org login sfdx-url -f auth_url.txt -a MySandbox
 
-      - name: Authenticate to Salesforce
+      - name: Detect Salesforce metadata changes
+        id: changes
         run: |
-          echo "Hi Mahir"
-         
+          echo "🔍 Detecting changed Salesforce files..."
+          
+          # Get list of changed files in last commit
+          CHANGED=$(git diff --name-only HEAD^ HEAD -- force-app/ | grep -E '\.(cls|trigger|xml|js|html|cmp|page|app|css)$' || true)
+          
+          if [ -z "$CHANGED" ]; then
+            echo "No Salesforce changes found."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "---------------------------------------"
+            echo "📂 Files changed in last commit:"
+            echo "---------------------------------------"
+            echo "$CHANGED" | while read file; do
+              echo "➡️  $file"
+            done
+            echo "---------------------------------------"
+
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "files=$CHANGED" >> $GITHUB_OUTPUT
+          fi
