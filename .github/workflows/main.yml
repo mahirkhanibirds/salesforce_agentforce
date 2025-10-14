@@ -50,5 +50,17 @@ jobs:
             echo "files=$CHANGED" >> $GITHUB_OUTPUT
           fi
 
-      - name: Deploy to Org
-        run: sf project deploy start -d $file -o MySandbox
+      - name: Deploy changed metadata to Salesforce
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          echo "🚀 Deploying changed files to MySandbox..."
+          
+          # Create temporary folder for changed files
+          mkdir changed
+          echo "${{ steps.changes.outputs.files }}" | while read file; do
+            mkdir -p "changed/$(dirname "$file")"
+            cp "$file" "changed/$file"
+          done
+          
+          # Deploy only changed metadata
+          sf project deploy start -d changed -o MySandbox --ignore-conflicts --wait 10
