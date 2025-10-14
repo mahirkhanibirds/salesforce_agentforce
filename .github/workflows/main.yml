@@ -8,10 +8,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
+
+      - name: Get list of changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
 
       - name: Install Salesforce CLI
         run: npm install @salesforce/cli --global
@@ -21,10 +24,10 @@ jobs:
           echo "${{ secrets.SFDX_AUTH_URL }}" > auth_url.txt
           sf org login sfdx-url -f auth_url.txt -a MySandbox
 
-      - name: Deploy to Org
+      - name: Deploy only changed files
         run: |
-          echo "${{ steps.changes.outputs.files }}" | while read file; do
-            mkdir -p "changed/$(dirname "$file")"
-            cp "$file" "changed/$file"
+          echo "Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
+          # Loop through changed files and deploy
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            sf project deploy start -d "$file" -o MySandbox
           done
-          #sf project deploy start -d force-app -o MySandbox
