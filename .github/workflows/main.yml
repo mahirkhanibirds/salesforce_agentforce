@@ -51,4 +51,4 @@ jobs:
           fi
 
       - name: Deploy to Org
-        run: sf project deploy start -d force-app -o MySandbox
+        run: sf project deploy start -d $file -o MySandbox
