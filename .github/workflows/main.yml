@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Full history for git diff to work properly
+          fetch-depth: 0
 
       # Step 2: Install Salesforce CLI
       - name: Install Salesforce CLI
@@ -26,16 +26,17 @@ jobs:
           echo "${{ secrets.SFDX_AUTH_URL }}" > auth_url.txt
           sf org login sfdx-url -f auth_url.txt -a MySandbox
 
+      # Step 4: Detect Salesforce metadata changes
       - name: Detect Salesforce metadata changes
         id: changes
         run: |
-          echo CHANGED=$(git diff --name-only HEAD^ HEAD -- force-app/ | grep -E '\.(cls|trigger|xml|js|html|cmp|page|app|css)$' || true)
-          
-          # Get list of changed files in last commit
-          CHANGED=$(git diff --name-only HEAD^ HEAD -- force-app/ | grep -E '\.(cls|trigger|xml|js|html|cmp|page|app|css)$' || true)
-          
+          echo "🔍 Checking for changed Salesforce files..."
+
+          # Get changed files between this and previous commit safely
+          CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- force-app/ | grep -E '\.(cls|trigger|xml|js|html|cmp|page|app|css)$' || true)
+
           if [ -z "$CHANGED" ]; then
-            echo "No Salesforce changes found."
+            echo "✅ No Salesforce metadata changes found."
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "---------------------------------------"
@@ -46,21 +47,30 @@ jobs:
             done
             echo "---------------------------------------"
 
+            # Output for later use
             echo "changed=true" >> $GITHUB_OUTPUT
-            echo "files=$CHANGED" >> $GITHUB_OUTPUT
+            echo "files<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGED" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
+      # Step 5: Deploy only changed files
       - name: Deploy changed metadata to Salesforce
         if: steps.changes.outputs.changed == 'true'
         run: |
           echo "🚀 Deploying changed files to MySandbox..."
-          
-          # Create temporary folder for changed files
+
+          # Create a temporary folder for changed files
           mkdir changed
           echo "${{ steps.changes.outputs.files }}" | while read file; do
             mkdir -p "changed/$(dirname "$file")"
             cp "$file" "changed/$file"
           done
-          
+
           # Deploy only changed metadata
           sf project deploy start -d changed -o MySandbox --ignore-conflicts --wait 10
+
+      # Step 6: Skip deployment if no changes
+      - name: Skip deployment
+        if: steps.changes.outputs.changed != 'true'
+        run: echo "✅ No Salesforce files changed. Deployment skipped."
