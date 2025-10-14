@@ -3,6 +3,7 @@
  */
 @IsTest public with sharing class SiteRegisterControllerTest {
     @IsTest(SeeAllData=true) static void testRegistration() {
+        System.debug(' Mahir Khgdgdfgd wggdgdfgdfgd ');
         SiteRegisterController controller = new SiteRegisterController();
         controller.username = 'test@force.com';
         controller.email = 'test@force.com';
