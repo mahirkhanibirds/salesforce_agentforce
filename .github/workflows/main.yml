@@ -49,3 +49,6 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "files=$CHANGED" >> $GITHUB_OUTPUT
           fi
+
+      - name: Deploy to Org
+        run: sf project deploy start -d force-app -o MySandbox
