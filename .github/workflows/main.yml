@@ -54,22 +54,26 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
           fi
 
-      # Step 5: Deploy only changed files
       - name: Deploy changed metadata to Salesforce
         if: steps.changes.outputs.changed == 'true'
         run: |
           echo "🚀 Deploying changed files to MySandbox..."
 
-          # Create a temporary folder for changed files
-          mkdir changed
+          # Create the same folder structure as original (force-app)
+          mkdir -p changed/force-app
+
+          # Copy changed files keeping relative path inside force-app
           echo "${{ steps.changes.outputs.files }}" | while read file; do
             mkdir -p "changed/$(dirname "$file")"
             cp "$file" "changed/$file"
           done
 
-          # Deploy only changed metadata
-          sf project deploy start -d changed -o MySandbox --ignore-conflicts --wait 10
+          echo "📦 Files prepared for deployment:"
+          find changed -type f
 
+          # Deploy only changed metadata
+          sf project deploy start -d changed/force-app -o MySandbox --ignore-conflicts --wait 10
+      
       # Step 6: Skip deployment if no changes
       - name: Skip deployment
         if: steps.changes.outputs.changed != 'true'
