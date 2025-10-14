@@ -4,6 +4,6 @@ public class tempCheck {
     }
 
     public static void testTempMethodOne(){
-        System.debug(' Mahir Khgdgdfgd ');
+        System.debug(' Mahir Khgdgdfgd wggdgdfgdfgd ');
     }
 }
