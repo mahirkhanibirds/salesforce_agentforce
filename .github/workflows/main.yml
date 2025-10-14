@@ -23,5 +23,8 @@ jobs:
 
       - name: Deploy to Org
         run: |
-          echo "${{ steps.changes.outputs.files }}"
-          sf project deploy start -d force-app -o MySandbox
+          echo "${{ steps.changes.outputs.files }}" | while read file; do
+            mkdir -p "changed/$(dirname "$file")"
+            cp "$file" "changed/$file"
+          done
+          #sf project deploy start -d force-app -o MySandbox
