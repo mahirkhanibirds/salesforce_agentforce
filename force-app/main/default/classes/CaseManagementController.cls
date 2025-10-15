@@ -1,6 +1,6 @@
 public without sharing class CaseManagementController {
     public class Wrapper {
-        @InvocableVariable(required = false Description = 'User Name')  
+        @InvocableVariable(required = false Description = 'User Name')   
         public String userName;
         @InvocableVariable(required = false Description = 'Approver Name')
         public String approverName;
