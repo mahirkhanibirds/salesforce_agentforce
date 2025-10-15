@@ -32,7 +32,7 @@ jobs:
           sf project deploy start \
             -d ${{ steps.changed-files.outputs.all_changed_files }} \
             -o MySandbox \
-            --check-only \
+            --dry-run \
             --test-level RunLocalTests \
             --ignore-warnings \
             --verbose
