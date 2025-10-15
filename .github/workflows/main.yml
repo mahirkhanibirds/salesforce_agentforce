@@ -24,6 +24,19 @@ jobs:
           echo "${{ secrets.SFDX_AUTH_URL }}" > auth_url.txt
           sf org login sfdx-url -f auth_url.txt -a MySandbox
 
+      - name: Validate changed components
+        run: |
+          echo "🔍 Validating changed components..."
+          echo "Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
+          # Run validation deployment
+          sf project deploy start \
+            -d ${{ steps.changed-files.outputs.all_changed_files }} \
+            -o MySandbox \
+            --check-only \
+            --test-level RunLocalTests \
+            --ignore-warnings \
+            --verbose
+
       - name: Deploy only changed files
         run: |
           echo "Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
