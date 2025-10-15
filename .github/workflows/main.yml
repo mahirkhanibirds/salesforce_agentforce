@@ -38,6 +38,7 @@ jobs:
             --verbose
 
       - name: Deploy only changed files
+      if: success()
         run: |
           echo "Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
           # Loop through changed files and deploy
